@@ -1,0 +1,3 @@
+# Placeholder untuk folder uploads
+# File ini memastikan folder uploads ter-commit ke git
+# File di dalam folder ini diabaikan oleh .gitignore
