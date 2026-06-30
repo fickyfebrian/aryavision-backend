@@ -7,6 +7,7 @@ agar Alembic bisa mendeteksinya secara otomatis.
 """
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -91,10 +92,10 @@ class Product(Base):
     )
 
     # Deskripsi produk (untuk Machine Learning — Content-Based Filtering)
-    description: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Cluster (untuk Machine Learning — Clustering)
+    cluster: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
 
     # Timestamps — otomatis diisi oleh database
     created_at: Mapped[datetime] = mapped_column(
