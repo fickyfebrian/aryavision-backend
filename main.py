@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import health, product, ml, recommendation
+from app.api import health, product, ml, recommendation, auth
 from app.core.config import settings
 from app.database.connection import check_database_connection
 from app.middlewares.exception_handler import register_exception_handlers
@@ -99,6 +99,7 @@ register_exception_handlers(app)
 # ===== ROUTERS =====
 # Semua router di-prefix dengan /api untuk versioning yang jelas
 app.include_router(health.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 app.include_router(product.router, prefix="/api")
 app.include_router(ml.router, prefix="/api")
 app.include_router(recommendation.router, prefix="/api")
