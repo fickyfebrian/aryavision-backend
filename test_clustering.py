@@ -13,15 +13,23 @@ def print_res(res, title):
         print(res.text)
 
 def run_tests():
-    print("Testing Clustering Pipeline...")
+    print("Testing ML Pipeline & Evaluation...")
     
-    # 1. Run Clustering
+    # 1. Test Preprocessing Pipeline
+    res_test = client.get("/api/ml/test")
+    print_res(res_test, "Test Pipeline (Stats)")
+    
+    # 2. Run Clustering
     res_clustering = client.get("/api/ml/clustering")
     print_res(res_clustering, "Run Clustering")
     
-    # 2. Get Clusters Summary
+    # 3. Get Clusters Summary
     res_summary = client.get("/api/ml/clusters")
     print_res(res_summary, "Clusters Summary")
+    
+    # 4. Evaluation
+    res_evaluation = client.get("/api/ml/evaluation")
+    print_res(res_evaluation, "KMeans Evaluation")
     
 if __name__ == "__main__":
     run_tests()

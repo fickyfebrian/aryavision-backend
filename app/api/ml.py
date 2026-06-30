@@ -10,40 +10,42 @@ from app.ml.feature_engineering import extract_features
 from app.ml.preprocessing import prepare_dataset
 from app.ml.scaler import min_max_scaler
 from app.ml.kmeans import train_model, predict_cluster, save_model, load_model, cluster_summary
+from app.ml.evaluation import calculate_elbow, calculate_silhouette
 from app.utils.response import success_response, error_response
 
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
-@router.get("/clustering", summary="Run K-Means Clustering")
-async def run_clustering(db: Session = Depends(get_db)):
-    """
-    Menjalankan proses clustering pada seluruh produk.
-    1. Ambil dataset & preprocess
-    2. Scaling
-    3. Latih model KMeans
-    4. Simpan model
-    5. Update tabel products dengan hasil cluster
-    """
+@router.get("/test", summary="Test ML Pipeline Preparation (Stats)")
+async def test_ml_pipeline(db: Session = Depends(get_db)):
     df_raw = load_dataset_from_db(db)
     if df_raw.empty:
         return error_response(message="Dataset is empty.", status_code=status.HTTP_400_BAD_REQUEST)
         
-    df_clean = prepare_dataset(df_raw)
+    df_clean, stats = prepare_dataset(df_raw)
+    stats["selected_features"] = SELECTED_FEATURES
+    
+    return success_response(
+        data=stats,
+        message="Machine Learning pipeline ready"
+    )
+
+@router.get("/clustering", summary="Run K-Means Clustering")
+async def run_clustering(db: Session = Depends(get_db)):
+    df_raw = load_dataset_from_db(db)
+    if df_raw.empty:
+        return error_response(message="Dataset is empty.", status_code=status.HTTP_400_BAD_REQUEST)
+        
+    df_clean, stats = prepare_dataset(df_raw)
     df_features = extract_features(df_clean)
     df_scaled = min_max_scaler(df_features)
     
-    # Latih model
     model = train_model(df_scaled, n_clusters=3)
     save_model(model)
     
-    # Prediksi
     clusters = predict_cluster(model, df_scaled)
     
-    # Update DB
-    # df_clean masih memiliki kolom 'id' dari tabel products
     ids = df_clean['id'].tolist()
     
-    # Batch update
     for product_id, cluster_label in zip(ids, clusters):
         db.query(Product).filter(Product.id == product_id).update({"cluster": cluster_label})
     
@@ -55,24 +57,20 @@ async def run_clustering(db: Session = Depends(get_db)):
         data={
             "total_product_processed": len(ids),
             "total_clusters": 3,
-            "distribution": distribution
+            "distribution": distribution,
+            "preprocessing_stats": stats
         },
         message="Clustering completed successfully and database updated."
     )
 
 @router.get("/clusters", summary="Get Cluster Summaries")
 async def get_clusters(db: Session = Depends(get_db)):
-    """
-    Mendapatkan ringkasan statistik dari masing-masing cluster.
-    """
     df_raw = load_dataset_from_db(db)
     if df_raw.empty:
         return error_response(message="Dataset is empty.", status_code=status.HTTP_400_BAD_REQUEST)
         
-    df_clean = prepare_dataset(df_raw)
+    df_clean, _ = prepare_dataset(df_raw)
     
-    # Karena kita ingin summary, kita perlu memprediksi ulang atau mengambil dari DB.
-    # Spesifikasi meminta ringkasan cluster. Kita bisa predik ulang dengan model yang disimpan.
     try:
         model = load_model()
     except FileNotFoundError:
@@ -82,11 +80,35 @@ async def get_clusters(db: Session = Depends(get_db)):
     df_scaled = min_max_scaler(df_features)
     clusters = predict_cluster(model, df_scaled)
     
-    # Buat summary menggunakan df_clean agar nilai average price dsb tidak menggunakan nilai scaler
     summary = cluster_summary(df_clean, clusters)
     
     return success_response(
         data=summary,
         message="Cluster summaries retrieved successfully."
+    )
+
+@router.get("/evaluation", summary="Evaluate KMeans Model")
+async def evaluate_kmeans(db: Session = Depends(get_db)):
+    df_raw = load_dataset_from_db(db)
+    if df_raw.empty:
+        return error_response(message="Dataset is empty.", status_code=status.HTTP_400_BAD_REQUEST)
+        
+    df_clean, _ = prepare_dataset(df_raw)
+    df_features = extract_features(df_clean)
+    df_scaled = min_max_scaler(df_features)
+    
+    elbow = calculate_elbow(df_scaled, max_k=10)
+    silhouette = calculate_silhouette(df_scaled, max_k=10)
+    
+    # Pilih k rekomendasi dari silhoutte tertinggi
+    recommended_k = max(silhouette, key=lambda x: x['score'])['k'] if silhouette else 3
+    
+    return success_response(
+        data={
+            "recommended_k": recommended_k,
+            "elbow": elbow,
+            "silhouette": silhouette
+        },
+        message="KMeans evaluation completed"
     )
 

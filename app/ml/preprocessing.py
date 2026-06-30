@@ -1,62 +1,66 @@
 import pandas as pd
+from typing import Tuple
 
-def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
+def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     """
-    Membersihkan dataset dari nilai yang tidak valid (contoh: harga negatif, dll).
-    """
-    cleaned_df = df.copy()
+    Menjalankan seluruh pipeline preprocessing secara berurutan dan mengembalikan
+    dataframe bersih beserta statistik penghapusan data.
     
-    # Pastikan tipe data sesuai (contoh: konversi numerik jika belum)
+    Langkah:
+    1. Hapus duplicate product
+    2. Hapus data dengan price <= 0 (atau null)
+    3. Hapus data dengan rating <= 0 (atau null)
+    4. Hapus data dengan sold <= 0 (atau null)
+    """
+    stats = {
+        "total_before": len(df),
+        "duplicate_removed": 0,
+        "rating_removed": 0,
+        "sold_removed": 0,
+        "price_removed": 0,
+        "total_after": 0
+    }
+    
+    current_df = df.copy()
+    
+    # 1. Pastikan tipe data numerik
     numeric_columns = ['price', 'rating', 'sold']
     for col in numeric_columns:
-        if col in cleaned_df.columns:
-            cleaned_df[col] = pd.to_numeric(cleaned_df[col], errors='coerce')
+        if col in current_df.columns:
+            current_df[col] = pd.to_numeric(current_df[col], errors='coerce')
             
-    # Hapus row yang harganya negatif
-    if 'price' in cleaned_df.columns:
-        cleaned_df = cleaned_df[cleaned_df['price'] >= 0]
-        
-    return cleaned_df
-
-def fill_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Mengisi missing values pada dataset.
-    - rating: isi dengan 0 jika null
-    - sold: isi dengan 0 jika null
-    """
-    filled_df = df.copy()
+    # 2. Hapus duplikat berdasarkan product_name dan price
+    initial_len = len(current_df)
+    if 'product_name' in current_df.columns and 'price' in current_df.columns:
+        current_df = current_df.drop_duplicates(subset=['product_name', 'price'])
+    stats["duplicate_removed"] = initial_len - len(current_df)
     
-    if 'rating' in filled_df.columns:
-        filled_df['rating'] = filled_df['rating'].fillna(0)
-        
-    if 'sold' in filled_df.columns:
-        filled_df['sold'] = filled_df['sold'].fillna(0)
-        
-    # Untuk fitur teks, isi dengan string kosong
-    text_columns = ['product_name', 'brand', 'category', 'description']
-    for col in text_columns:
-        if col in filled_df.columns:
-            filled_df[col] = filled_df[col].fillna('')
-            
-    return filled_df
-
-def remove_duplicate(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Menghapus data duplikat berdasarkan product_name dan price.
-    """
-    dedup_df = df.copy()
-    if 'product_name' in dedup_df.columns and 'price' in dedup_df.columns:
-        dedup_df = dedup_df.drop_duplicates(subset=['product_name', 'price'])
-    return dedup_df
-
-def prepare_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Menjalankan seluruh pipeline preprocessing secara berurutan.
-    """
-    df = clean_dataset(df)
-    df = fill_missing_values(df)
-    df = remove_duplicate(df)
+    # 3. Hapus price <= 0 atau null
+    initial_len = len(current_df)
+    if 'price' in current_df.columns:
+        current_df = current_df[current_df['price'] > 0]
+    stats["price_removed"] = initial_len - len(current_df)
     
-    # Reset index setelah drop rows
-    df = df.reset_index(drop=True)
-    return df
+    # 4. Hapus rating <= 0 atau null
+    initial_len = len(current_df)
+    if 'rating' in current_df.columns:
+        current_df = current_df[current_df['rating'] > 0]
+    stats["rating_removed"] = initial_len - len(current_df)
+    
+    # 5. Hapus sold <= 0 atau null
+    initial_len = len(current_df)
+    if 'sold' in current_df.columns:
+        current_df = current_df[current_df['sold'] > 0]
+    stats["sold_removed"] = initial_len - len(current_df)
+    
+    # Reset index
+    current_df = current_df.reset_index(drop=True)
+    stats["total_after"] = len(current_df)
+    
+    return current_df, stats
+
+def prepare_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
+    """
+    Wrapper untuk clean_dataset agar konsisten dengan struktur sebelumnya.
+    """
+    return clean_dataset(df)
