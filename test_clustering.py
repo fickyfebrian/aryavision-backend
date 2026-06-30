@@ -31,5 +31,9 @@ def run_tests():
     res_evaluation = client.get("/api/ml/evaluation")
     print_res(res_evaluation, "KMeans Evaluation")
     
+    # 5. Test CBF Engine
+    res_cbf = client.get("/api/ml/cbf/test")
+    print_res(res_cbf, "Content-Based Filtering Engine")
+    
 if __name__ == "__main__":
     run_tests()
