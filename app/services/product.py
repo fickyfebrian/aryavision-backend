@@ -17,6 +17,11 @@ class ProductService:
         page: int = 1, 
         limit: int = 20, 
         search: Optional[str] = None,
+        cluster: Optional[int] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        min_rating: Optional[float] = None,
+        max_rating: Optional[float] = None,
         sort_by: Optional[str] = None,
         order: Optional[str] = "asc"
     ) -> Tuple[list[Product], int]:
@@ -29,7 +34,12 @@ class ProductService:
         return self.repository.find_all(
             skip=skip, 
             limit=limit, 
-            search=search, 
+            search=search,
+            cluster=cluster,
+            min_price=min_price,
+            max_price=max_price,
+            min_rating=min_rating,
+            max_rating=max_rating,
             sort_by=sort_by, 
             order=order
         )

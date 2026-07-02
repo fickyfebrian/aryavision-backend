@@ -6,12 +6,12 @@ from app.models.product import Product
 from app.database.connection import get_db
 from app.ml.constants import SELECTED_FEATURES
 from app.ml.dataset_loader import load_dataset_from_db
-from app.ml.feature_engineering import extract_features
+from app.ml.feature_engineering import extract_features, extract_cbf_features
 from app.ml.preprocessing import prepare_dataset
 from app.ml.scaler import min_max_scaler
 from app.ml.kmeans import train_model, predict_cluster, save_model, load_model, cluster_summary
 from app.ml.evaluation import calculate_elbow, calculate_silhouette
-from app.ml.text_preprocessing import preprocess_text
+
 from app.ml.cbf import train_cbf, save_cbf_models
 from app.utils.response import success_response, error_response
 
@@ -130,19 +130,19 @@ async def test_cbf_engine(db: Session = Depends(get_db)):
         
     df_clean, _ = prepare_dataset(df_raw)
     
-    # Text Preprocessing
-    df_text = preprocess_text(df_clean)
+    # Feature Extraction & Scaling
+    df_features = extract_cbf_features(df_clean)
+    df_scaled = min_max_scaler(df_features)
     
     # Train CBF
-    vectorizer, sim_matrix, product_index = train_cbf(df_text)
+    vectorizer, sim_matrix, product_index = train_cbf(df_scaled, df_clean['id'].tolist())
     
     # Save CBF Models
     save_cbf_models(vectorizer, sim_matrix, product_index)
     
     return success_response(
         data={
-            "total_products": len(df_text),
-            "tfidf_shape": list(vectorizer.idf_.shape) if hasattr(vectorizer, 'idf_') else [len(df_text), len(vectorizer.vocabulary_)],
+            "total_products": len(df_clean),
             "similarity_shape": list(sim_matrix.shape)
         },
         message="Content-Based Filtering Engine Ready"

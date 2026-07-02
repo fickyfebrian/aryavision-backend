@@ -9,8 +9,8 @@ def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     Langkah:
     1. Hapus duplicate product
     2. Hapus data dengan price <= 0 (atau null)
-    3. Hapus data dengan rating <= 0 (atau null)
-    4. Hapus data dengan sold <= 0 (atau null)
+    3. Isi data rating yang kosong dengan 0
+    4. Isi data sold yang kosong dengan 0
     """
     stats = {
         "total_before": len(df),
@@ -41,17 +41,19 @@ def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
         current_df = current_df[current_df['price'] > 0]
     stats["price_removed"] = initial_len - len(current_df)
     
-    # 4. Hapus rating <= 0 atau null
+    # 4. Isi rating yang kosong atau negatif dengan 0
     initial_len = len(current_df)
     if 'rating' in current_df.columns:
-        current_df = current_df[current_df['rating'] > 0]
-    stats["rating_removed"] = initial_len - len(current_df)
+        current_df['rating'] = current_df['rating'].fillna(0)
+        current_df.loc[current_df['rating'] < 0, 'rating'] = 0
+    stats["rating_removed"] = 0
     
-    # 5. Hapus sold <= 0 atau null
+    # 5. Isi sold yang kosong atau negatif dengan 0
     initial_len = len(current_df)
     if 'sold' in current_df.columns:
-        current_df = current_df[current_df['sold'] > 0]
-    stats["sold_removed"] = initial_len - len(current_df)
+        current_df['sold'] = current_df['sold'].fillna(0)
+        current_df.loc[current_df['sold'] < 0, 'sold'] = 0
+    stats["sold_removed"] = 0
     
     # Reset index
     current_df = current_df.reset_index(drop=True)

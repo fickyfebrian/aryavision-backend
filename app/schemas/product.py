@@ -14,6 +14,7 @@ class ProductBase(BaseModel):
     rating: Optional[float] = Field(default=None, ge=0, le=5, description="Rating hanya boleh 0 sampai 5")
     sold: Optional[int] = Field(default=0, ge=0, description="Sold minimal 0")
     description: Optional[str] = None
+    cluster: Optional[int] = None
 
 
 class ProductCreate(ProductBase):

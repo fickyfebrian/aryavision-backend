@@ -16,6 +16,11 @@ class ProductRepository:
         skip: int = 0, 
         limit: int = 20, 
         search: Optional[str] = None,
+        cluster: Optional[int] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        min_rating: Optional[float] = None,
+        max_rating: Optional[float] = None,
         sort_by: Optional[str] = None,
         order: Optional[str] = "asc"
     ) -> Tuple[list[Product], int]:
@@ -24,6 +29,24 @@ class ProductRepository:
         if search:
             search_term = f"%{search}%"
             query = query.filter(Product.product_name.ilike(search_term))
+            
+        if cluster is not None:
+            query = query.filter(Product.cluster == cluster)
+            
+        if min_price is not None:
+            query = query.filter(Product.price >= min_price)
+            
+        if max_price is not None:
+            query = query.filter(Product.price <= max_price)
+            
+        if min_rating is not None:
+            query = query.filter(Product.rating >= min_rating)
+            
+        if max_rating is not None:
+            if max_rating == 5 and min_rating == 5:
+                query = query.filter(Product.rating <= 5)
+            else:
+                query = query.filter(Product.rating < max_rating)
             
         if sort_by:
             # Prevent SQL injection by validating the sort column

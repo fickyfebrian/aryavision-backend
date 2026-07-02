@@ -2,8 +2,9 @@ import os
 import joblib
 import pandas as pd
 from sklearn.cluster import KMeans
+import numpy as np
 
-from app.ml.constants import SELECTED_FEATURES
+from app.ml.constants import ALL_FEATURES
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
 MODEL_PATH = os.path.join(MODEL_DIR, "kmeans_model.pkl")
@@ -16,11 +17,27 @@ def train_model(df_features: pd.DataFrame, n_clusters: int = 3) -> KMeans:
     model.fit(df_features)
     return model
 
+def get_ordered_cluster_mapping(model: KMeans) -> dict:
+    """
+    Mengembalikan mapping {old_cluster_id: new_cluster_id} 
+    berdasarkan urutan centroid (harga) dari terkecil ke terbesar.
+    """
+    # Mengambil nilai centroid untuk fitur pertama (price)
+    centers = model.cluster_centers_[:, 0]
+    ordered_indices = np.argsort(centers)
+    
+    # Mapping old_id -> new_id (0: Budget, 1: Mid, 2: Premium)
+    mapping = {old_id: new_id for new_id, old_id in enumerate(ordered_indices)}
+    return mapping
+
 def predict_cluster(model: KMeans, df_features: pd.DataFrame) -> list[int]:
     """
     Melakukan prediksi cluster berdasarkan model yang telah dilatih.
+    Secara otomatis me-relabel cluster agar 0=Budget, 1=Mid, 2=Premium
     """
-    return model.predict(df_features).tolist()
+    raw_clusters = model.predict(df_features)
+    mapping = get_ordered_cluster_mapping(model)
+    return [mapping[c] for c in raw_clusters]
 
 def save_model(model: KMeans) -> None:
     """
@@ -54,18 +71,15 @@ def cluster_summary(df_original: pd.DataFrame, clusters: list[int]) -> list[dict
     df['cluster'] = clusters
     
     # Hitung rata-rata tiap fitur untuk tiap cluster
-    summary_df = df.groupby('cluster')[SELECTED_FEATURES].mean().reset_index()
+    summary_df = df.groupby('cluster')[ALL_FEATURES].mean().reset_index()
     
-    # Beri label otomatis berdasarkan urutan harga rata-rata
-    # Harga terendah = Budget, Menengah = Mid Range, Tertinggi = Premium
-    summary_df = summary_df.sort_values(by='price', ascending=True).reset_index(drop=True)
-    labels = ["Budget", "Mid Range", "Premium"]
+    # Karena cluster sudah diurutkan (0=Budget, 1=Mid, 2=Premium), 
+    # kita bisa mapping langsung berdasarkan nilai cluster.
+    label_map = {0: "Budget", 1: "Mid Range", 2: "Premium"}
+    summary_df['label'] = summary_df['cluster'].map(label_map)
     
-    # Jika jumlah cluster kurang dari 3, pangkas labels
-    if len(summary_df) < 3:
-        labels = labels[:len(summary_df)]
-        
-    summary_df['label'] = labels
+    # Jika ada cluster yang tidak dikenali, beri nama default
+    summary_df['label'] = summary_df['label'].fillna("Unknown")
     
     # Convert ke dict
     results = []

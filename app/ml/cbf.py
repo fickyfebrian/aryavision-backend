@@ -1,7 +1,7 @@
 import os
 import joblib
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
+
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Tuple, Any
 
@@ -10,35 +10,24 @@ TFIDF_PATH = os.path.join(MODEL_DIR, "tfidf_vectorizer.pkl")
 SIMILARITY_PATH = os.path.join(MODEL_DIR, "similarity_matrix.pkl")
 INDEX_MAPPING_PATH = os.path.join(MODEL_DIR, "product_index.pkl")
 
-def train_cbf(df: pd.DataFrame) -> Tuple[TfidfVectorizer, Any, dict]:
+def train_cbf(df_features: pd.DataFrame, product_ids: list[int]) -> Tuple[Any, Any, dict]:
     """
-    Membangun model Content-Based Filtering dari dataframe teks bersih.
+    Membangun model Content-Based Filtering dari dataframe numerik.
     Menghasilkan:
-    1. TfidfVectorizer object
+    1. None (Kompatibilitas TfidfVectorizer)
     2. Cosine Similarity matrix
     3. Product Index mapping (product_id -> matrix index)
     """
-    # Pastikan dataframe memiliki kolom clean_text dan id
-    if 'clean_text' not in df.columns or 'id' not in df.columns:
-        raise ValueError("DataFrame must contain 'clean_text' and 'id' columns.")
-        
-    texts = df['clean_text'].tolist()
-    product_ids = df['id'].tolist()
+    # 1. Hitung Cosine Similarity langsung dari fitur numerik
+    sim_matrix = cosine_similarity(df_features, df_features)
     
-    # 1. Bangun TF-IDF
-    vectorizer = TfidfVectorizer(max_features=5000)
-    tfidf_matrix = vectorizer.fit_transform(texts)
-    
-    # 2. Hitung Cosine Similarity
-    sim_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
-    
-    # 3. Buat Mapping Index
+    # 2. Buat Mapping Index
     # product_id -> index of matrix
     product_index = {product_id: idx for idx, product_id in enumerate(product_ids)}
     
-    return vectorizer, sim_matrix, product_index
+    return None, sim_matrix, product_index
 
-def save_cbf_models(vectorizer: TfidfVectorizer, sim_matrix: Any, product_index: dict) -> None:
+def save_cbf_models(vectorizer: Any, sim_matrix: Any, product_index: dict) -> None:
     """
     Menyimpan model TF-IDF, Similarity Matrix, dan Product Index ke disk.
     """
@@ -49,7 +38,7 @@ def save_cbf_models(vectorizer: TfidfVectorizer, sim_matrix: Any, product_index:
     joblib.dump(sim_matrix, SIMILARITY_PATH)
     joblib.dump(product_index, INDEX_MAPPING_PATH)
     
-def load_cbf_models() -> Tuple[TfidfVectorizer, Any, dict]:
+def load_cbf_models() -> Tuple[Any, Any, dict]:
     """
     Memuat model TF-IDF, Similarity Matrix, dan Product Index dari disk.
     """

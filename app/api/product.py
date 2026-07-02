@@ -20,11 +20,27 @@ async def get_products(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     search: Optional[str] = Query(None, description="Search by product name"),
+    cluster: Optional[int] = Query(None, description="Filter by cluster ID"),
+    min_price: Optional[int] = Query(None, description="Minimum price filter"),
+    max_price: Optional[int] = Query(None, description="Maximum price filter"),
+    min_rating: Optional[float] = Query(None, description="Minimum rating filter"),
+    max_rating: Optional[float] = Query(None, description="Maximum rating filter"),
     sort: Optional[str] = Query(None, description="Sort column (e.g. price, rating, sold, created_at)"),
     order: Optional[str] = Query("asc", description="Sort order (asc or desc)"),
     service: ProductService = Depends(get_product_service)
 ):
-    items, total = service.get_products(page=page, limit=limit, search=search, sort_by=sort, order=order)
+    items, total = service.get_products(
+        page=page, 
+        limit=limit, 
+        search=search, 
+        cluster=cluster,
+        min_price=min_price,
+        max_price=max_price,
+        min_rating=min_rating,
+        max_rating=max_rating,
+        sort_by=sort, 
+        order=order
+    )
     
     # We must serialize the SQLAlchemy models to dicts using Pydantic schema
     items_dict = [ProductResponse.model_validate(item).model_dump(mode='json') for item in items]
