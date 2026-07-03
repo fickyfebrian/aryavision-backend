@@ -1,5 +1,7 @@
 import re
-import pymysql
+from sqlalchemy import text
+from app.database.connection import engine
+
 
 def clean_price(price_str):
     if not price_str or price_str.strip() == '' or price_str == 'Harga':
@@ -46,31 +48,22 @@ def extract_brand(name_str):
     return first_word
 
 def run_import():
-    conn = pymysql.connect(
-        host='localhost', 
-        user='root', 
-        password='', 
-        database='skripsi_cctv', 
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
-    
     try:
-        with conn.cursor() as cursor:
+        with engine.connect() as conn:
             # 1. Fetch raw data
-            cursor.execute("SELECT * FROM produk")
-            raw_data = cursor.fetchall()
+            result = conn.execute(text("SELECT * FROM raw_products"))
+            raw_data = result.mappings().all()
             
             successful_imports = 0
             failed_imports = 0
             
             for row in raw_data:
-                product_url = row.get('COL 1')
-                image_url = row.get('COL 2')
-                product_name = row.get('COL 3')
-                price_raw = row.get('COL 4')
-                rating_raw = row.get('COL 6')
-                sold_raw = row.get('COL 7')
+                product_url = row.get('Link Produk')
+                image_url = row.get('Gambar')
+                product_name = row.get('Nama')
+                price_raw = str(row.get('Harga') or '')
+                rating_raw = str(row.get('Rating') or '')
+                sold_raw = str(row.get('Popularitas') or '')
                 
                 # Skip header row if exists
                 if product_name == 'Nama' or not product_name:
@@ -84,20 +77,20 @@ def run_import():
                     brand = extract_brand(product_name)
                     
                     # 2. Insert into new table
-                    sql = """
+                    sql = text("""
                         INSERT INTO products 
                         (product_name, product_url, image_url, brand, price, rating, sold) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """
-                    cursor.execute(sql, (
-                        product_name,
-                        product_url,
-                        image_url,
-                        brand,
-                        price,
-                        rating,
-                        sold
-                    ))
+                        VALUES (:name, :url, :image, :brand, :price, :rating, :sold)
+                    """)
+                    conn.execute(sql, {
+                        "name": product_name,
+                        "url": product_url,
+                        "image": image_url,
+                        "brand": brand,
+                        "price": price,
+                        "rating": rating,
+                        "sold": sold
+                    })
                     successful_imports += 1
                 except Exception as e:
                     print(f"Failed to process row: {product_name} - Error: {e}")
@@ -112,13 +105,13 @@ def run_import():
             
             # Show some sample data from the new table
             print("\n--- Sample Processed Data ---")
-            cursor.execute("SELECT id, product_name, brand, price, rating, sold FROM products LIMIT 3")
-            for sample in cursor.fetchall():
+            sample_result = conn.execute(text("SELECT id, product_name, brand, price, rating, sold FROM products LIMIT 3"))
+            for sample in sample_result.mappings().all():
                 print(f"ID: {sample['id']} | Brand: {sample['brand']} | Price: Rp{sample['price']} | Rating: {sample['rating']} | Sold: {sample['sold']}")
                 print(f"Name: {sample['product_name']}\n")
                 
-    finally:
-        conn.close()
+    except Exception as e:
+        print(f"Failed to connect or process database: {e}")
 
 if __name__ == "__main__":
     run_import()
