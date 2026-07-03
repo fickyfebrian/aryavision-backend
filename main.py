@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
     if db_ok:
         print("[OK] Database connection: Connected")
     else:
-        print("[WARNING] Database connection: FAILED - Pastikan XAMPP MySQL sedang berjalan!")
+        print("[WARNING] Database connection: FAILED - Pastikan PostgreSQL Supabase sedang berjalan!")
 
     print(f"[INFO] Swagger UI  : http://localhost:8000/docs")
     print(f"[INFO] ReDoc       : http://localhost:8000/redoc")
@@ -68,7 +68,7 @@ Backend untuk Sistem Rekomendasi Produk CCTV.
 ### Tech Stack:
 - **FastAPI** — Web framework
 - **SQLAlchemy** — ORM
-- **MySQL** — Database
+- **PostgreSQL** — Database
 - **JWT** — Authentication
     """,
     docs_url="/docs",        # Swagger UI
