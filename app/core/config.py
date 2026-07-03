@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     """
 
     # --- Database ---
-    DB_HOST: str = "localhost"
-    DB_PORT: int = 3306
-    DB_USER: str = "root"
-    DB_PASS: str = ""
-    DB_NAME: str = "products"
+    DB_HOST: str = "db.withdmwtkaupnyxcndsw.supabase.co"
+    DB_PORT: int = 5432
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "Ikikasep11!"
+    DB_NAME: str = "postgres"
 
     # --- JWT ---
     SECRET_KEY: str = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
@@ -38,9 +38,10 @@ class Settings(BaseSettings):
         Menggunakan PyMySQL sebagai driver karena lebih ringan dan pure Python.
         """
         return (
-            f"mysql+pymysql://{self.DB_USER}:{self.DB_PASS}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        )
+        f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}"
+        f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        "?sslmode=require"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
