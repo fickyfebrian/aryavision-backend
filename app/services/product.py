@@ -63,3 +63,6 @@ class ProductService:
     def delete_product(self, product_id: int) -> None:
         product = self.get_product_by_id(product_id)
         self.repository.delete(product)
+
+    def get_dashboard_statistics(self) -> dict:
+        return self.repository.get_dashboard_statistics()

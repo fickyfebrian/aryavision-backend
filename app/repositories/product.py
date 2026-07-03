@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from sqlalchemy import asc, desc, or_
+from sqlalchemy import func, asc, desc, or_
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
@@ -86,3 +86,18 @@ class ProductRepository:
     def delete(self, db_product: Product) -> None:
         self.db.delete(db_product)
         self.db.commit()
+
+    def get_dashboard_statistics(self) -> dict:
+        total_products = self.db.query(func.count(Product.id)).scalar() or 0
+        total_brands = self.db.query(func.count(func.distinct(Product.brand))).scalar() or 0
+        budget_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 0).scalar() or 0
+        mid_range_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 1).scalar() or 0
+        premium_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 2).scalar() or 0
+        
+        return {
+            "total_products": total_products,
+            "total_brands": total_brands,
+            "budget_cluster": budget_cluster,
+            "mid_range_cluster": mid_range_cluster,
+            "premium_cluster": premium_cluster
+        }
