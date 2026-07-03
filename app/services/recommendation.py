@@ -56,12 +56,22 @@ def get_recommendations(db: Session, product_id: int, limit: int = 10):
         )
         
     if product_id not in product_index:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Product with ID {product_id} was not included in the CBF training (possibly eliminated during preprocessing)."
-        )
+        # Fallback for products eliminated during preprocessing (e.g. duplicates)
+        match = db.query(Product).filter(
+            Product.id.in_(list(product_index.keys())),
+            Product.product_name == selected_product.product_name,
+            Product.price == selected_product.price
+        ).first()
         
-    target_idx = product_index[product_id]
+        if match:
+            target_idx = product_index[match.id]
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Product with ID {product_id} was not included in the CBF training (possibly eliminated during preprocessing)."
+            )
+    else:
+        target_idx = product_index[product_id]
     sim_scores = sim_matrix[target_idx]
     
     # 3. Ambil semua produk di cluster yang sama

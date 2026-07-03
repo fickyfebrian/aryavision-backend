@@ -53,6 +53,19 @@ async def run_clustering(db: Session = Depends(get_db)):
     
     db.commit()
     
+    # Synchronize unclustered products (eliminated during preprocessing like duplicates)
+    unclustered = db.query(Product).filter(Product.cluster.is_(None)).all()
+    for up in unclustered:
+        match = db.query(Product).filter(
+            Product.cluster.isnot(None),
+            Product.product_name == up.product_name,
+            Product.price == up.price
+        ).first()
+        if match:
+            up.cluster = match.cluster
+    
+    db.commit()
+    
     distribution = dict(Counter(clusters))
     
     return success_response(
