@@ -14,8 +14,24 @@ from app.ml.evaluation import calculate_elbow, calculate_silhouette
 
 from app.ml.cbf import train_cbf, save_cbf_models
 from app.utils.response import success_response, error_response
+from app.services.ml_status_service import MLStatusService
 
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
+
+@router.get("/status", summary="Get Machine Learning Model Status")
+async def get_ml_status(db: Session = Depends(get_db)):
+    status_data = MLStatusService.get_status(db)
+    
+    return success_response(
+        data={
+            "needs_retrain": status_data.needs_retrain,
+            "last_trained_at": status_data.last_trained_at.isoformat() + "Z" if status_data.last_trained_at else None,
+            "last_dataset_update": status_data.last_dataset_update.isoformat() + "Z" if status_data.last_dataset_update else None,
+            "model_status": status_data.model_status,
+            "model_version": status_data.model_version
+        },
+        message="Berhasil mengambil status Machine Learning"
+    )
 
 @router.get("/test", summary="Test ML Pipeline Preparation (Stats)")
 async def test_ml_pipeline(db: Session = Depends(get_db)):
@@ -152,6 +168,9 @@ async def test_cbf_engine(db: Session = Depends(get_db)):
     
     # Save CBF Models
     save_cbf_models(vectorizer, sim_matrix, product_index)
+    
+    # Menandai bahwa proses retraining secara keseluruhan (termasuk CBF) telah sukses
+    MLStatusService.mark_retrain_success(db)
     
     return success_response(
         data={

@@ -25,6 +25,7 @@ from app.database.connection import Base
 # PENTING: Setiap kali menambahkan model baru, import di sini!
 from app.models import product  # noqa: F401 — diperlukan agar Alembic detect tabel products
 from app.models import admin    # noqa: F401 — detect tabel admins
+from app.models import ml_status # noqa: F401
 
 # ─── Alembic Config ────────────────────────────────────────────────────────
 config = context.config

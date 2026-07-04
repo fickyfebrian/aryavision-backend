@@ -8,8 +8,12 @@ from app.repositories.product import ProductRepository
 from app.schemas.product import ProductCreate, ProductUpdate
 
 
+from app.services.ml_status_service import MLStatusService
+
+
 class ProductService:
     def __init__(self, db: Session):
+        self.db = db
         self.repository = ProductRepository(db)
 
     def get_products(
@@ -54,15 +58,35 @@ class ProductService:
         return product
 
     def create_product(self, product_in: ProductCreate) -> Product:
-        return self.repository.create(product_in)
+        new_product = self.repository.create(product_in)
+        # Menandai model perlu dilatih ulang karena penambahan produk baru
+        MLStatusService.mark_needs_retrain(self.db)
+        return new_product
 
     def update_product(self, product_id: int, product_in: ProductUpdate) -> Product:
         product = self.get_product_by_id(product_id)
-        return self.repository.update(product, product_in)
+        
+        # Mengecek apakah ada perubahan pada field numerik yang mempengaruhi algoritma ML
+        update_data = product_in.dict(exclude_unset=True)
+        needs_retrain = False
+        for field in ["price", "rating", "sold"]:
+            if field in update_data and getattr(product, field) != update_data[field]:
+                needs_retrain = True
+                break
+                
+        updated_product = self.repository.update(product, product_in)
+        
+        if needs_retrain:
+            # Menandai model perlu dilatih ulang karena data numerik berubah
+            MLStatusService.mark_needs_retrain(self.db)
+            
+        return updated_product
 
     def delete_product(self, product_id: int) -> None:
         product = self.get_product_by_id(product_id)
         self.repository.delete(product)
+        # Menandai model perlu dilatih ulang karena produk dihapus
+        MLStatusService.mark_needs_retrain(self.db)
 
     def get_dashboard_statistics(self) -> dict:
         return self.repository.get_dashboard_statistics()
