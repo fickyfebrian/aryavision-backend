@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     """
 
     # --- Database ---
-    DB_HOST: str = "db.withdmwtkaupnyxcndsw.supabase.co"
+    DB_HOST: str = "aws-1-ap-southeast-1.pooler.supabase.com"
     DB_PORT: int = 5432
-    DB_USER: str = "postgres"
+    DB_USER: str = "postgres.withdmwtkaupnyxcndsw"
     DB_PASSWORD: str = "Ikikasep11!"
     DB_NAME: str = "postgres"
 

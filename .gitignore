@@ -44,3 +44,8 @@ ml/models/*.joblib
 # Logs
 *.log
 logs/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
