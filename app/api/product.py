@@ -7,6 +7,8 @@ from app.database.connection import get_db
 from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate
 from app.services.product import ProductService
 from app.utils.response import error_response, paginated_response, success_response
+from app.api.deps import get_current_admin
+from app.models.admin import Admin
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -67,7 +69,8 @@ async def get_product(
 @router.post("", summary="Create a new product", status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_in: ProductCreate,
-    service: ProductService = Depends(get_product_service)
+    service: ProductService = Depends(get_product_service),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
 ):
     product = service.create_product(product_in)
     product_dict = ProductResponse.model_validate(product).model_dump(mode='json')
@@ -78,7 +81,8 @@ async def create_product(
 async def update_product(
     product_id: int,
     product_in: ProductUpdate,
-    service: ProductService = Depends(get_product_service)
+    service: ProductService = Depends(get_product_service),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
 ):
     product = service.update_product(product_id, product_in)
     product_dict = ProductResponse.model_validate(product).model_dump(mode='json')
@@ -88,7 +92,8 @@ async def update_product(
 @router.delete("/{product_id}", summary="Delete a product")
 async def delete_product(
     product_id: int,
-    service: ProductService = Depends(get_product_service)
+    service: ProductService = Depends(get_product_service),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
 ):
     service.delete_product(product_id)
     return success_response(message="Product deleted successfully")

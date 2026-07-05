@@ -2,6 +2,8 @@ from collections import Counter
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.models.product import Product
+from app.models.admin import Admin
+from app.api.deps import get_current_admin
 
 from app.database.connection import get_db
 from app.ml.constants import SELECTED_FEATURES
@@ -19,7 +21,10 @@ from app.services.ml_status_service import MLStatusService
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
 @router.get("/status", summary="Get Machine Learning Model Status")
-async def get_ml_status(db: Session = Depends(get_db)):
+async def get_ml_status(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
+):
     status_data = MLStatusService.get_status(db)
     
     return success_response(
@@ -48,7 +53,10 @@ async def test_ml_pipeline(db: Session = Depends(get_db)):
     )
 
 @router.get("/clustering", summary="Run K-Means Clustering")
-async def run_clustering(db: Session = Depends(get_db)):
+async def run_clustering(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
+):
     df_raw = load_dataset_from_db(db)
     if df_raw.empty:
         return error_response(message="Dataset is empty.", status_code=status.HTTP_400_BAD_REQUEST)
@@ -144,7 +152,10 @@ async def evaluate_kmeans(db: Session = Depends(get_db)):
     )
 
 @router.get("/cbf/test", summary="Test Content-Based Filtering Engine")
-async def test_cbf_engine(db: Session = Depends(get_db)):
+async def test_cbf_engine(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin) # Menambahkan proteksi autentikasi JWT
+):
     """
     Test endpoint to build the CBF Engine:
     1. Load DB
