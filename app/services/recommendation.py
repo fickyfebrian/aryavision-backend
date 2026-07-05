@@ -112,6 +112,8 @@ def get_recommendations(db: Session, product_id: int, limit: int = 10):
             "price": p.price,
             "rating": p.rating,
             "sold": p.sold,
+            "image_url": p.image_url,
+            "product_url": p.product_url,
             "cluster": cluster_label,
             "similarity_score": round(float(score), 4)
         })
@@ -124,6 +126,8 @@ def get_recommendations(db: Session, product_id: int, limit: int = 10):
         "price": selected_product.price,
         "rating": selected_product.rating,
         "sold": selected_product.sold,
+        "image_url": selected_product.image_url,
+        "product_url": selected_product.product_url,
         "cluster": cluster_label
     }
         
