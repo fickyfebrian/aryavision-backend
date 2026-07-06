@@ -79,18 +79,23 @@ Backend untuk Sistem Rekomendasi Produk CCTV.
 
 # ===== MIDDLEWARE =====
 
-# CORS — mengizinkan frontend mengakses API ini
-# Di production, ganti allow_origins dengan domain frontend yang spesifik
+# Konfigurasi CORS
+allowed_origins = ["*"] if settings.DEBUG else []
+if settings.FRONTEND_URL:
+    allowed_origins.extend([url.strip() for url in settings.FRONTEND_URL.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # Saat development, izinkan semua origin
+    allow_origins=allowed_origins if allowed_origins else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],       # GET, POST, PUT, DELETE, dll
-    allow_headers=["*"],       # Authorization, Content-Type, dll
+    allow_methods=["*"],       
+    allow_headers=["*"],       
 )
 
 # ===== STATIC FILES =====
-# Melayani file dari folder uploads/ (untuk gambar produk nantinya)
+# Pastikan folder uploads ada sebelum di-mount (mencegah crash di platform cloud seperti Render)
+import os
+os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ===== EXCEPTION HANDLERS =====

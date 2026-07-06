@@ -30,18 +30,30 @@ class Settings(BaseSettings):
     APP_NAME: str = "AryaVision API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
+    FRONTEND_URL: str = ""  # Comma separated list of allowed origins
+    
+    # --- Override Database URL ---
+    DATABASE_URL_DIRECT: str | None = None
 
     @property
     def DATABASE_URL(self) -> str:
         """
         Membangun Database URL secara dinamis dari komponen-komponennya.
-        Menggunakan PyMySQL sebagai driver karena lebih ringan dan pure Python.
+        Jika DATABASE_URL_DIRECT di-set (misal dari Render), gunakan itu.
         """
+        if self.DATABASE_URL_DIRECT:
+            # SQLAlchemy membutuhkan postgresql:// bukan postgres://
+            if self.DATABASE_URL_DIRECT.startswith("postgres://"):
+                return self.DATABASE_URL_DIRECT.replace("postgres://", "postgresql+psycopg://", 1)
+            if self.DATABASE_URL_DIRECT.startswith("postgresql://"):
+                return self.DATABASE_URL_DIRECT.replace("postgresql://", "postgresql+psycopg://", 1)
+            return self.DATABASE_URL_DIRECT
+            
         return (
-        f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}"
-        f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        "?sslmode=require"
-    )
+            f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            "?sslmode=require"
+        )
 
     model_config = SettingsConfigDict(
         env_file=".env",
