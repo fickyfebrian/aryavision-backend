@@ -48,7 +48,7 @@ def get_recommendations(db: Session, product_id: int, limit: int = 10):
 
     # 2. Load ML Models
     try:
-        vectorizer, sim_matrix, product_index = load_cbf_models()
+        sim_matrix, product_index = load_cbf_models()
     except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

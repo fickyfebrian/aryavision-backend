@@ -175,10 +175,10 @@ async def test_cbf_engine(
     df_scaled = min_max_scaler(df_features)
     
     # Train CBF
-    vectorizer, sim_matrix, product_index = train_cbf(df_scaled, df_clean['id'].tolist())
+    sim_matrix, product_index = train_cbf(df_scaled, df_clean['id'].tolist())
     
     # Save CBF Models
-    save_cbf_models(vectorizer, sim_matrix, product_index)
+    save_cbf_models(sim_matrix, product_index)
     
     # Menandai bahwa proses retraining secara keseluruhan (termasuk CBF) telah sukses
     MLStatusService.mark_retrain_success(db)
