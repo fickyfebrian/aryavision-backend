@@ -22,7 +22,7 @@ class Product(Base):
     Tabel ini adalah tabel utama aplikasi yang berisi data CCTV
     yang sudah bersih dan siap digunakan oleh API maupun Machine Learning.
 
-    Data asalnya dari tabel 'produk' (raw dataset hasil scraping Tokopedia)
+    Data asalnya dari tabel 'produk' (raw dataset inventaris Toko Arya Vision)
     yang sudah dipreprocess oleh script scripts/import_dataset.py.
     """
 
@@ -36,14 +36,14 @@ class Product(Base):
         index=True,
     )
 
-    # Nama lengkap produk dari Tokopedia
+    # Nama lengkap produk dari katalog Toko Arya Vision
     product_name: Mapped[str] = mapped_column(
         String(500),
         nullable=False,
         index=True,  # Untuk mempercepat pencarian berdasarkan nama
     )
 
-    # URL halaman produk di Tokopedia
+    # URL referensi produk
     product_url: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

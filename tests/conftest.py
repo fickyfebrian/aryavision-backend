@@ -37,8 +37,8 @@ def sample_admin() -> Admin:
 def sample_product() -> Product:
     product = Product(
         product_name="EZVIZ C6N Indoor CCTV",
-        product_url="https://tokopedia.com/ezviz-c6n",
-        image_url="https://images.tokopedia.com/ezviz-c6n.jpg",
+        product_url="https://aryavision.com/products/ezviz-c6n",
+        image_url="https://aryavision.com/images/ezviz-c6n.jpg",
         brand="EZVIZ",
         category="Indoor",
         price=350000,
