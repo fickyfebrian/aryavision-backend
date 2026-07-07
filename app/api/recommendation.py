@@ -17,7 +17,7 @@ async def recommend_products(
     Menghasilkan daftar produk rekomendasi berdasarkan produk yang dipilih.
     Rekomendasi dihitung menggunakan pendekatan hybrid:
     1. Mencari produk dalam cluster yang sama (K-Means)
-    2. Mengurutkan berdasarkan kemiripan konten (TF-IDF & Cosine Similarity)
+    2. Mengurutkan berdasarkan Kemiripan Atribut Numerik & Cosine Similarity
     """
     result = get_recommendations(db, product_id, limit)
     

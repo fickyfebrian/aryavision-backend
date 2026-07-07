@@ -161,7 +161,7 @@ async def test_cbf_engine(
     1. Load DB
     2. Preprocess (clean_dataset)
     3. Text Preprocess (combine & clean text)
-    4. Train TF-IDF & Cosine Similarity
+    4. Train Numerical Features & Cosine Similarity
     5. Save Models
     """
     df_raw = load_dataset_from_db(db)
