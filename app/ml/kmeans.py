@@ -62,9 +62,10 @@ def evaluate_cluster(df_features: pd.DataFrame, clusters: list[int]) -> float:
     """
     return 0.0
 
-def cluster_summary(df_original: pd.DataFrame, clusters: list[int]) -> list[dict]:
+def cluster_summary(df_original: pd.DataFrame, clusters: list[int]) -> dict:
     """
-    Menghasilkan ringkasan cluster (rata-rata harga, rating, sold).
+    Menghasilkan ringkasan cluster (batas harga, rata-rata harga, rating, sold) 
+    beserta data raw produk untuk visualisasi 1D Spectrum.
     df_original harus memiliki kolom dari SELECTED_FEATURES.
     """
     df = df_original.copy()
@@ -73,27 +74,37 @@ def cluster_summary(df_original: pd.DataFrame, clusters: list[int]) -> list[dict
     # Hitung rata-rata tiap fitur untuk tiap cluster
     summary_df = df.groupby('cluster')[ALL_FEATURES].mean().reset_index()
     
-    # Karena cluster sudah diurutkan (0=Budget, 1=Mid, 2=Premium), 
-    # kita bisa mapping langsung berdasarkan nilai cluster.
+    # Hitung batas min dan max harga
+    min_prices = df.groupby('cluster')['price'].min()
+    max_prices = df.groupby('cluster')['price'].max()
+    
     label_map = {0: "Budget", 1: "Mid Range", 2: "Premium"}
-    summary_df['label'] = summary_df['cluster'].map(label_map)
     
-    # Jika ada cluster yang tidak dikenali, beri nama default
-    summary_df['label'] = summary_df['label'].fillna("Unknown")
-    
-    # Convert ke dict
-    results = []
+    cluster_stats = []
     for _, row in summary_df.iterrows():
         cluster_id = int(row['cluster'])
-        results.append({
+        cluster_stats.append({
             "cluster_id": cluster_id,
-            "label": str(row['label']),
+            "label": label_map.get(cluster_id, "Unknown"),
             "total_product": int(len(df[df['cluster'] == cluster_id])),
             "average_price": float(row['price']),
+            "min_price": float(min_prices.get(cluster_id, 0.0)),
+            "max_price": float(max_prices.get(cluster_id, 0.0)),
             "average_rating": float(row['rating']),
             "average_sold": float(row['sold'])
         })
         
-    # Kembalikan dengan mengurutkan berdasarkan cluster_id
-    results = sorted(results, key=lambda x: x['cluster_id'])
-    return results
+    # Mengurutkan berdasarkan cluster_id
+    cluster_stats = sorted(cluster_stats, key=lambda x: x['cluster_id'])
+    
+    # Raw data untuk visualisasi (hanya kolom yang diperlukan saja agar ringan)
+    # Jika kategori tidak ada, fallback ke string kosong
+    if 'category' not in df.columns:
+        df['category'] = 'Uncategorized'
+        
+    products_data = df[['id', 'product_name', 'price', 'rating', 'category', 'cluster']].to_dict(orient='records')
+    
+    return {
+        "clusters": cluster_stats,
+        "products": products_data
+    }
