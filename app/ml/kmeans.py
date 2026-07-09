@@ -102,7 +102,16 @@ def cluster_summary(df_original: pd.DataFrame, clusters: list[int]) -> dict:
     if 'category' not in df.columns:
         df['category'] = 'Uncategorized'
         
-    products_data = df[['id', 'product_name', 'price', 'rating', 'category', 'cluster']].to_dict(orient='records')
+    products_data = []
+    for _, r in df.iterrows():
+        products_data.append({
+            "id": int(r['id']),
+            "product_name": str(r['product_name']),
+            "price": float(r['price']),
+            "rating": float(r['rating']),
+            "category": str(r['category']) if pd.notna(r['category']) else "Uncategorized",
+            "cluster": int(r['cluster'])
+        })
     
     return {
         "clusters": cluster_stats,
