@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import health, product, ml, recommendation, auth, dashboard
+from app.api import health, product, ml, recommendation, auth, dashboard, lab
 from app.core.config import settings
 from app.database.connection import check_database_connection
 from app.middlewares.exception_handler import register_exception_handlers
@@ -109,6 +109,7 @@ app.include_router(product.router, prefix="/api")
 app.include_router(ml.router, prefix="/api")
 app.include_router(recommendation.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(lab.router, prefix="/api")
 
 # Nanti akan ditambahkan:
 # app.include_router(auth.router, prefix="/api")
