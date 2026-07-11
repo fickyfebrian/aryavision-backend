@@ -24,7 +24,11 @@ class ProductRepository:
         sort_by: Optional[str] = None,
         order: Optional[str] = "asc"
     ) -> Tuple[list[Product], int]:
-        query = self.db.query(Product)
+        # Menerapkan Batasan Data (Scope) Sistem Rekomendasi:
+        # Memfilter produk yang tidak memiliki histori interaksi (rating <= 0 atau terjual <= 0).
+        # Hal ini bertujuan untuk menghindari "Cold Start Problem" pada algoritma Content-Based Filtering,
+        # sehingga rekomendasi yang dihasilkan lebih akurat dan relevan.
+        query = self.db.query(Product).filter(Product.rating > 0, Product.sold > 0)
         
         if search:
             search_term = f"%{search}%"
@@ -88,11 +92,15 @@ class ProductRepository:
         self.db.commit()
 
     def get_dashboard_statistics(self) -> dict:
-        total_products = self.db.query(func.count(Product.id)).scalar() or 0
-        total_brands = self.db.query(func.count(func.distinct(Product.brand))).scalar() or 0
-        budget_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 0).scalar() or 0
-        mid_range_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 1).scalar() or 0
-        premium_cluster = self.db.query(func.count(Product.id)).filter(Product.cluster == 2).scalar() or 0
+        # Menerapkan filter yang sama dengan Katalog agar jumlah metrik dashboard sinkron.
+        # Hanya menghitung produk yang memenuhi syarat untuk sistem rekomendasi (memiliki rating & popularitas).
+        base_query = self.db.query(Product).filter(Product.rating > 0, Product.sold > 0)
+        
+        total_products = base_query.count()
+        total_brands = self.db.query(func.count(func.distinct(Product.brand))).filter(Product.rating > 0, Product.sold > 0).scalar() or 0
+        budget_cluster = base_query.filter(Product.cluster == 0).count()
+        mid_range_cluster = base_query.filter(Product.cluster == 1).count()
+        premium_cluster = base_query.filter(Product.cluster == 2).count()
         
         return {
             "total_products": total_products,

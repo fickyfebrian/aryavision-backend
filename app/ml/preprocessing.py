@@ -41,19 +41,21 @@ def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
         current_df = current_df[current_df['price'] > 0]
     stats["price_removed"] = initial_len - len(current_df)
     
-    # 4. Isi rating yang kosong atau negatif dengan 0
+    # 4. Tahap Pembersihan Data (Data Cleaning):
+    # Menghapus produk yang tidak memiliki rating (<= 0 atau null)
+    # Hal ini dilakukan untuk menjaga validitas perhitungan kemiripan (similarity) pada CBF.
     initial_len = len(current_df)
     if 'rating' in current_df.columns:
-        current_df['rating'] = current_df['rating'].fillna(0)
-        current_df.loc[current_df['rating'] < 0, 'rating'] = 0
-    stats["rating_removed"] = 0
+        current_df = current_df[current_df['rating'] > 0]
+    stats["rating_removed"] = initial_len - len(current_df)
     
-    # 5. Isi sold yang kosong atau negatif dengan 0
+    # 5. Tahap Pembersihan Data (Data Cleaning):
+    # Menghapus produk yang tidak memiliki angka penjualan/popularitas (<= 0 atau null)
+    # Bertujuan untuk menghindari "Cold Start Problem" dalam sistem rekomendasi.
     initial_len = len(current_df)
     if 'sold' in current_df.columns:
-        current_df['sold'] = current_df['sold'].fillna(0)
-        current_df.loc[current_df['sold'] < 0, 'sold'] = 0
-    stats["sold_removed"] = 0
+        current_df = current_df[current_df['sold'] > 0]
+    stats["sold_removed"] = initial_len - len(current_df)
     
     # Reset index
     current_df = current_df.reset_index(drop=True)
