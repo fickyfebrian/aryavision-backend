@@ -8,6 +8,7 @@ from app.ml.preprocessing import clean_dataset
 from app.ml.feature_engineering import extract_features, extract_cbf_features
 from app.ml.scaler import min_max_scaler
 from app.ml.kmeans import predict_cluster, load_model
+from app.ml.evaluation import calculate_elbow, calculate_silhouette
 
 router = APIRouter(prefix="/lab", tags=["Lab Algoritma"])
 
@@ -68,6 +69,29 @@ async def process_dataset(file: UploadFile = File(...)):
     df_scaled = min_max_scaler(df_features)
     clusters = predict_cluster(model, df_scaled)
     df_clean['cluster'] = clusters
+    
+    # Calculate Dynamic Evaluation Metrics for this dataset
+    # Hanya lakukan jika jumlah sampel cukup untuk k-means (min 10)
+    dynamic_evaluation = None
+    if len(df_scaled) >= 10:
+        try:
+            elbow_data = calculate_elbow(df_scaled, max_k=min(10, len(df_scaled)-1))
+            silhouette_data = calculate_silhouette(df_scaled, max_k=min(10, len(df_scaled)-1))
+            
+            # Find best k based on silhouette
+            best_k = 3
+            if silhouette_data:
+                best_k_entry = max(silhouette_data, key=lambda x: x['score'])
+                best_k = best_k_entry['k']
+                
+            dynamic_evaluation = {
+                "recommended_k": best_k,
+                "elbow": elbow_data,
+                "silhouette": silhouette_data
+            }
+        except Exception as e:
+            # Jika perhitungan metrics gagal (misal data terlalu homogen), skip saja
+            pass
     
     # Calculate normalization for display
     df_cbf_features = extract_cbf_features(df_clean)
@@ -140,7 +164,8 @@ async def process_dataset(file: UploadFile = File(...)):
             "clusters": cluster_stats,
             "raw_products": raw_products_data,
             "cleaned_products": cleaned_products_data,
-            "normalized_products": normalized_products
+            "normalized_products": normalized_products,
+            "evaluation": dynamic_evaluation
         }
     }
 
