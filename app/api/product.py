@@ -3,7 +3,8 @@ import os
 import uuid
 import shutil
 
-from fastapi import APIRouter, Depends, Query, status, UploadFile, File
+import httpx
+from fastapi import APIRouter, Depends, Query, status, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -12,6 +13,7 @@ from app.services.product import ProductService
 from app.utils.response import error_response, paginated_response, success_response
 from app.api.deps import get_current_admin
 from app.models.admin import Admin
+from app.core.config import settings
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -74,20 +76,37 @@ async def upload_product_image(
     file: UploadFile = File(...),
     current_admin: Admin = Depends(get_current_admin)
 ):
-    upload_dir = "uploads/products"
-    os.makedirs(upload_dir, exist_ok=True)
-    
+    if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing in .env")
+
     ext = os.path.splitext(file.filename)[1]
     if not ext:
         ext = ".jpg"
     unique_filename = f"{uuid.uuid4().hex}{ext}"
     
-    file_path = os.path.join(upload_dir, unique_filename)
+    bucket_name = "products"
+    supabase_storage_url = f"{settings.SUPABASE_URL}/storage/v1/object/{bucket_name}/{unique_filename}"
     
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    headers = {
+        "Authorization": f"Bearer {settings.SUPABASE_KEY}",
+        "apikey": settings.SUPABASE_KEY,
+        "Content-Type": file.content_type or "image/jpeg"
+    }
+    
+    file_content = await file.read()
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            supabase_storage_url,
+            headers=headers,
+            content=file_content
+        )
         
-    image_url = f"/uploads/products/{unique_filename}"
+    if response.status_code not in (200, 201):
+        raise HTTPException(status_code=400, detail=f"Failed to upload image to Supabase: {response.text}")
+        
+    # Generate the public URL
+    image_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{unique_filename}"
     
     return success_response(data={"image_url": image_url}, message="Image uploaded successfully")
 

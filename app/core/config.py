@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     FRONTEND_URL: str = ""  # Comma separated list of allowed origins
     
+    # --- Supabase Storage API ---
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    
     # --- Override Database URL ---
     DATABASE_URL_DIRECT: str | None = None
 
