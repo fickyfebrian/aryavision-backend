@@ -185,15 +185,15 @@ async def calculate_cbf(payload: CBFCalcRequest):
         bounds = payload.bounds
         
         target_norm = [
-            normalize(payload.target.get('price', 0), bounds['price']['min'], bounds['price']['max']),
-            normalize(payload.target.get('rating', 0), bounds['rating']['min'], bounds['rating']['max']),
-            normalize(payload.target.get('sold', 0), bounds['sales']['min'], bounds['sales']['max'])
+            round(normalize(payload.target.get('price', 0), bounds['price']['min'], bounds['price']['max']), 4),
+            round(normalize(payload.target.get('rating', 0), bounds['rating']['min'], bounds['rating']['max']), 4),
+            round(normalize(payload.target.get('sold', 0), bounds['sales']['min'], bounds['sales']['max']), 4)
         ]
         
         alt_norm = [
-            normalize(payload.alt.get('price', 0), bounds['price']['min'], bounds['price']['max']),
-            normalize(payload.alt.get('rating', 0), bounds['rating']['min'], bounds['rating']['max']),
-            normalize(payload.alt.get('sold', 0), bounds['sales']['min'], bounds['sales']['max'])
+            round(normalize(payload.alt.get('price', 0), bounds['price']['min'], bounds['price']['max']), 4),
+            round(normalize(payload.alt.get('rating', 0), bounds['rating']['min'], bounds['rating']['max']), 4),
+            round(normalize(payload.alt.get('sold', 0), bounds['sales']['min'], bounds['sales']['max']), 4)
         ]
         
         dot_product = sum(t * a for t, a in zip(target_norm, alt_norm))
