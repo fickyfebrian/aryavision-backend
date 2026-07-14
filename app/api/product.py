@@ -1,6 +1,9 @@
 from typing import Optional
+import os
+import uuid
+import shutil
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -64,6 +67,29 @@ async def get_product(
     product = service.get_product_by_id(product_id)
     product_dict = ProductResponse.model_validate(product).model_dump(mode='json')
     return success_response(data=product_dict, message="Product retrieved successfully")
+
+
+@router.post("/upload-image", summary="Upload a product image")
+async def upload_product_image(
+    file: UploadFile = File(...),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    upload_dir = "uploads/products"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    ext = os.path.splitext(file.filename)[1]
+    if not ext:
+        ext = ".jpg"
+    unique_filename = f"{uuid.uuid4().hex}{ext}"
+    
+    file_path = os.path.join(upload_dir, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    image_url = f"/uploads/products/{unique_filename}"
+    
+    return success_response(data={"image_url": image_url}, message="Image uploaded successfully")
 
 
 @router.post("", summary="Create a new product", status_code=status.HTTP_201_CREATED)
