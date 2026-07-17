@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.product import Product
 from app.repositories.product import ProductRepository
 from app.schemas.product import ProductCreate, ProductUpdate
-
+from app.utils.supabase import delete_image_from_supabase
 
 from app.services.ml_status_service import MLStatusService
 
@@ -73,6 +73,9 @@ class ProductService:
             if field in update_data and getattr(product, field) != update_data[field]:
                 needs_retrain = True
                 break
+        # Delete old image if changed
+        if product_in.image_url is not None and product_in.image_url != product.image_url:
+            delete_image_from_supabase(product.image_url)
                 
         updated_product = self.repository.update(product, product_in)
         
@@ -84,7 +87,14 @@ class ProductService:
 
     def delete_product(self, product_id: int) -> None:
         product = self.get_product_by_id(product_id)
+        image_url = product.image_url
+        
         self.repository.delete(product)
+        
+        # Hapus foto dari Supabase jika ada
+        if image_url:
+            delete_image_from_supabase(image_url)
+            
         # Menandai model perlu dilatih ulang karena produk dihapus
         MLStatusService.mark_needs_retrain(self.db)
 
